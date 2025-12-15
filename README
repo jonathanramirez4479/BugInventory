@@ -1,0 +1,7 @@
+Plan:
+
+1. build data model (done)
+2. build TUI
+	- implement navigation b/w inputField and exampleList
+3. build function to create and store objects
+
