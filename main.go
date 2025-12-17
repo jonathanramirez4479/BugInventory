@@ -1,52 +1,57 @@
 package main
 
 import (
-	// "github.com/gdamore/tcell/v2"
+	"encoding/json"
 	"fmt"
-	"sort"
-
 	"github.com/gdamore/tcell/v2"
 	"github.com/lithammer/fuzzysearch/fuzzy"
 	"github.com/rivo/tview"
+	"os"
+	"sort"
 )
 
 type Record struct {
-	ErrorMessage string `json:"title"`
-	Solution     string `json:"solution"`
+	Bug      string `json:"bug"`
+	Solution string `json:"solution"`
 }
 
-var records = []Record{
-	{ErrorMessage: "Null pointer dereference", Solution: "solution"},
-	{ErrorMessage: "Race condition in goroutine", Solution: "solution"},
-	{ErrorMessage: "Race condition for mutex", Solution: "solution"},
-	{ErrorMessage: "Channel closed twice", Solution: "solution"},
-	{ErrorMessage: "Deadlock in mutex", Solution: "solution"},
-}
+var records = []Record{}
 
 var exampleList = tview.NewList()
 
 func initData() {
+	// Populare records with json data
+	data, err := os.ReadFile("./data.json")
+	if err != nil {
+		panic(err)
+	}
+
+	if err := json.Unmarshal(data, &records); err != nil {
+		panic(err)
+	}
+
 	for _, rec := range records {
-		exampleList.AddItem(rec.ErrorMessage, rec.Solution, 0, nil)
+		exampleList.AddItem(rec.Bug, rec.Solution, 0, nil)
 	}
 }
 
 func inputChange(text string) {
 	exampleList.Clear()
 
-	errorMessages := []string{}
+	bugs := []string{}
+	items := make(map[string]string)
 
 	for _, rec := range records {
-		errorMessages = append(errorMessages, rec.ErrorMessage)
+		bugs = append(bugs, rec.Bug)
+		items[rec.Bug] = rec.Solution
 	}
 
-	rankings := fuzzy.RankFindFold(text, errorMessages)
+	rankings := fuzzy.RankFindFold(text, bugs)
 	sort.Sort(rankings)
 
 	for _, rank := range rankings {
-		exampleList.AddItem(rank.Target, "solution", 0, nil)
+		exampleList.AddItem(rank.Target, items[rank.Target], 0, nil)
 	}
-
 }
 
 func main() {
@@ -80,14 +85,11 @@ func main() {
 		SetLabel("Enter an issue: ").
 		SetLabelColor(tcell.ColorWhite).
 		SetChangedFunc(inputChange).
-		SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
-			switch event.Key() {
+		SetDoneFunc(func(key tcell.Key) {
+			switch key {
 			case tcell.KeyEnter:
 				app.SetFocus(exampleList)
-				return nil
 			}
-
-			return event
 		}).
 		SetBorder(true).
 		SetBackgroundColor(tcell.Color19)
@@ -123,11 +125,12 @@ func main() {
 				solution := solutionInput.GetText()
 
 				item := Record{
-					ErrorMessage: title,
-					Solution:     solution,
+					Bug:      title,
+					Solution: solution,
 				}
 
 				records = append(records, item)
+				exampleList.AddItem(item.Bug, item.Solution, 0, nil)
 
 				return nil
 			}
@@ -147,7 +150,7 @@ func main() {
 		// show new modal for showing bug info
 		pages.ShowPage("selectedRecordFlex")
 		selectedRecordModal.SetText(fmt.Sprintf(`
-				Title: %s,
+				Bug: %s,
 				Solution: %s
 			`, s1, s2))
 		app.SetFocus(selectedRecordModal)

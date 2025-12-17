@@ -1,0 +1,22 @@
+[
+  {
+    "bug": "Null pointer dereference",
+    "solution": "This error occurs when a pointer is used before being initialized. Ensure the pointer is allocated with new or assigned a valid reference before access."
+  },
+  {
+    "bug": "Race condition in goroutine",
+    "solution": "Multiple goroutines are accessing shared data without synchronization. Protect shared state using mutexes or channels to ensure safe access."
+  },
+  {
+    "bug": "Channel closed twice",
+    "solution": "A channel must only be closed by the sender and only once. Track ownership of the channel or use a sync.Once to prevent multiple close calls."
+  },
+  {
+    "bug": "Deadlock in mutex",
+    "solution": "Deadlocks happen when goroutines wait on each other indefinitely. Always lock mutexes in a consistent order and avoid holding locks longer than necessary."
+  },
+  {
+    "bug": "Index out of range",
+    "solution": "This panic occurs when accessing a slice or array index outside its bounds. Check slice length before indexing and validate loop conditions."
+  }
+]
