@@ -10,54 +10,63 @@ import (
 	"sort"
 )
 
-type Record struct {
-	Bug      string `json:"bug"`
-	Solution string `json:"solution"`
-}
-
-var records = []Record{}
-
-var exampleList = tview.NewList()
-
-func initData() {
-	// Populare records with json data
-	data, err := os.ReadFile("./data.json")
+func initData(bugList *tview.List, bugs *[]Bug) {
+	/*
+		Initialize records of bugs and bugsList for TUI
+	*/
+	data, err := os.ReadFile("data.json")
 	if err != nil {
 		panic(err)
 	}
 
-	if err := json.Unmarshal(data, &records); err != nil {
+	if err := json.Unmarshal(data, &bugs); err != nil {
 		panic(err)
 	}
 
-	for _, rec := range records {
-		exampleList.AddItem(rec.Bug, rec.Solution, 0, nil)
+	for _, bug := range *bugs {
+		bugList.AddItem(bug.Label, bug.Solution, 0, nil)
 	}
 }
 
-func inputChange(text string) {
-	exampleList.Clear()
+func inputChange(text string, bugList *tview.List, bugs *[]Bug) {
+	bugList.Clear()
 
-	bugs := []string{}
+	bugLabels := []string{}
 	items := make(map[string]string)
 
-	for _, rec := range records {
-		bugs = append(bugs, rec.Bug)
-		items[rec.Bug] = rec.Solution
+	for _, bug := range *bugs {
+		bugLabels = append(bugLabels, bug.Label)
+		items[bug.Label] = bug.Solution
 	}
 
-	rankings := fuzzy.RankFindFold(text, bugs)
+	rankings := fuzzy.RankFindFold(text, bugLabels)
 	sort.Sort(rankings)
 
 	for _, rank := range rankings {
-		exampleList.AddItem(rank.Target, items[rank.Target], 0, nil)
+		bugList.AddItem(rank.Target, items[rank.Target], 0, nil)
 	}
 }
 
+func writeToDisk(bugs []Bug) error {
+	data, err := json.MarshalIndent(&bugs, "", " ")
+	if err != nil {
+		return err
+	}
+
+	err = os.WriteFile("data.json", data, 0644)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func main() {
+	bugs := []Bug{}
 	app := tview.NewApplication()
 	flex := tview.NewFlex()
-	form := tview.NewForm()
+	addBugForm := tview.NewForm()
+	bugList := tview.NewList()
 	inputField := tview.NewInputField()
 	addRecordModal := tview.NewFlex().SetDirection(tview.FlexRow)
 	selectedRecordFlex := tview.NewFlex().SetDirection(tview.FlexRow)
@@ -70,32 +79,37 @@ func main() {
 		SetDoneFunc(func(buttonIndex int, buttonLabel string) {
 			if buttonLabel == "Close" {
 				pages.HidePage("selectedRecordFlex")
-				app.SetFocus(exampleList)
+				app.SetFocus(bugList)
 			}
 		})
 
-	initData()
+	initData(bugList, &bugs)
 
 	inputHints.
 		SetDynamicColors(true).
-		SetText(`[yellow]<Ctrl+N> Add new record     <Enter>  Enter items list    <Ctrl+Q> Quit`).
+		SetText(`[yellow]<Ctrl+N> Add new record     <Enter>  Enter results list    <Ctrl+Q> Quit`).
 		SetBackgroundColor(tcell.Color19)
 
 	inputField.
-		SetLabel("Enter an issue: ").
+		SetLabel("Enter an error message: ").
 		SetLabelColor(tcell.ColorWhite).
-		SetChangedFunc(inputChange).
+		SetFieldTextColor(tcell.ColorWhite).
+		SetFieldBackgroundColor(tcell.Color26).
+		SetChangedFunc(func(text string) {
+			inputChange(text, bugList, &bugs)
+		}).
 		SetDoneFunc(func(key tcell.Key) {
 			switch key {
 			case tcell.KeyEnter:
-				app.SetFocus(exampleList)
+				app.SetFocus(bugList)
+				inputHints.SetText("")
 			}
 		}).
 		SetBorder(true).
 		SetBackgroundColor(tcell.Color19)
 
-	form.
-		AddInputField("Title", "", 30, nil, nil).
+	addBugForm.
+		AddInputField("Label", "", 30, nil, nil).
 		AddTextArea("Solution", "", 80, 0, 0, nil).
 		AddTextView("", "<Enter> Submit form    <Esc> Exit prompt", 0, 0, false, true).
 		SetBorder(true).
@@ -106,31 +120,34 @@ func main() {
 				pages.HidePage("addRecordModal")
 				app.SetFocus(inputField)
 
-				titleItem := form.GetFormItemByLabel("Title")
-				titleInput, ok := titleItem.(*tview.InputField)
+				bugLabelItem := addBugForm.GetFormItemByLabel("Label")
+				bugLabelInput, ok := bugLabelItem.(*tview.InputField)
 
 				if !ok {
 					panic("Title is not an input field")
 				}
 
-				title := titleInput.GetText()
+				bugLabel := bugLabelInput.GetText()
 
-				solutionItem := form.GetFormItemByLabel("Solution")
-				solutionInput, ok := solutionItem.(*tview.TextArea)
+				bugSolutionItem := addBugForm.GetFormItemByLabel("Solution")
+				bugSolutionInput, ok := bugSolutionItem.(*tview.TextArea)
 
 				if !ok {
 					panic("Solution is not a TextArea")
 				}
 
-				solution := solutionInput.GetText()
+				bugSolution := bugSolutionInput.GetText()
 
-				item := Record{
-					Bug:      title,
-					Solution: solution,
+				bug := Bug{
+					Label:    bugLabel,
+					Solution: bugSolution,
 				}
 
-				records = append(records, item)
-				exampleList.AddItem(item.Bug, item.Solution, 0, nil)
+				bugs = append(bugs, bug)
+				bugList.AddItem(bug.Label, bug.Solution, 0, nil)
+
+				bugLabelInput.SetText("")
+				bugSolutionInput.SetText("", false)
 
 				return nil
 			}
@@ -138,7 +155,7 @@ func main() {
 			return event
 		})
 
-	exampleList.
+	bugList.
 		SetMainTextColor(tcell.ColorWhite).
 		SetSecondaryTextColor(tcell.ColorYellow).
 		SetBorder(true).
@@ -146,11 +163,11 @@ func main() {
 		SetTitleAlign(tview.AlignLeft).
 		SetBackgroundColor(tcell.Color17)
 
-	exampleList.SetSelectedFunc(func(i int, s1, s2 string, r rune) {
+	bugList.SetSelectedFunc(func(i int, s1, s2 string, r rune) {
 		// show new modal for showing bug info
 		pages.ShowPage("selectedRecordFlex")
 		selectedRecordModal.SetText(fmt.Sprintf(`
-				Bug: %s,
+				Label: %s,
 				Solution: %s
 			`, s1, s2))
 		app.SetFocus(selectedRecordModal)
@@ -160,14 +177,16 @@ func main() {
 		switch event.Key() {
 		case tcell.KeyCtrlN:
 			pages.ShowPage("addRecordModal")
-			app.SetFocus(form)
+			app.SetFocus(addBugForm)
 			return nil
 		case tcell.KeyEsc:
 			pages.HidePage("addRecordModal")
 			pages.HidePage("selectedRecordFlex")
 			app.SetFocus(inputField)
+			inputHints.SetText(`[yellow]<Ctrl+N> Add new record     <Enter>  Enter results list    <Ctrl+Q> Quit`)
 			return nil
 		case tcell.KeyCtrlQ:
+			writeToDisk(bugs)
 			app.Stop()
 			return nil
 		}
@@ -178,12 +197,12 @@ func main() {
 	flex.SetDirection(tview.FlexRow).
 		AddItem(inputField, 3, 0, true).
 		AddItem(inputHints, 6, 0, false).
-		AddItem(exampleList, 0, 1, false).
+		AddItem(bugList, 0, 1, false).
 		SetBorderColor(tcell.ColorWhite)
 
 	addRecordModal.
 		AddItem(nil, 0, 1, false).
-		AddItem(form, 15, 1, true).
+		AddItem(addBugForm, 15, 1, true).
 		AddItem(nil, 0, 1, false)
 
 	selectedRecordFlex.

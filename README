@@ -1,25 +1,4 @@
 Plan:
 
-1. build data model
-
-Example
-type Record struct {
-	ErrorMessage string `json:"title"`
-	Solution     string `json:"solution"`
-}
-
-var records = []Record{
-	{ErrorMessage: "Null pointer dereference", Solution: "solution"},
-	{ErrorMessage: "Race condition in goroutine", Solution: "solution"},
-	{ErrorMessage: "Race condition for mutex", Solution: "solution"},
-	{ErrorMessage: "Channel closed twice", Solution: "solution"},
-	{ErrorMessage: "Deadlock in mutex", Solution: "solution"},
-}
-
-2. build TUI
-	- Only show key hints in current view
-	- add key hints to results, 
-3. build function to create and store objects
-
-TODO:
-- clean up code + make abstractions where possible
+1. add option to delete bug
+  

@@ -1,22 +1,34 @@
 [
-  {
-    "bug": "Null pointer dereference",
-    "solution": "This error occurs when a pointer is used before being initialized. Ensure the pointer is allocated with new or assigned a valid reference before access."
-  },
-  {
-    "bug": "Race condition in goroutine",
-    "solution": "Multiple goroutines are accessing shared data without synchronization. Protect shared state using mutexes or channels to ensure safe access."
-  },
-  {
-    "bug": "Channel closed twice",
-    "solution": "A channel must only be closed by the sender and only once. Track ownership of the channel or use a sync.Once to prevent multiple close calls."
-  },
-  {
-    "bug": "Deadlock in mutex",
-    "solution": "Deadlocks happen when goroutines wait on each other indefinitely. Always lock mutexes in a consistent order and avoid holding locks longer than necessary."
-  },
-  {
-    "bug": "Index out of range",
-    "solution": "This panic occurs when accessing a slice or array index outside its bounds. Check slice length before indexing and validate loop conditions."
-  }
+ {
+  "label": "Null pointer dereference",
+  "solution": "Ensure the pointer is initialized before use. Add nil checks and consider using constructor functions."
+ },
+ {
+  "label": "Race condition in goroutine",
+  "solution": "Protect shared state with mutexes or channels. Run `go test -race` to detect race conditions."
+ },
+ {
+  "label": "Deadlock in mutex",
+  "solution": "Avoid nested locks and ensure mutexes are always unlocked, preferably using `defer`."
+ },
+ {
+  "label": "Channel closed twice",
+  "solution": "Only close channels from the sender side and ensure closure happens exactly once."
+ },
+ {
+  "label": "Index out of range panic",
+  "solution": "Validate slice indices before access and guard loops with correct bounds."
+ },
+ {
+  "label": "new bug",
+  "solution": "new bug solution"
+ },
+ {
+  "label": "new bug 2",
+  "solution": "new bug solution"
+ },
+ {
+  "label": "new bug 3",
+  "solution": "solution 3"
+ }
 ]

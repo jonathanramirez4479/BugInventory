@@ -1,0 +1,22 @@
+[
+  {
+    "label": "Null pointer dereference",
+    "solution": "Ensure the pointer is initialized before use. Add nil checks and consider using constructor functions."
+  },
+  {
+    "label": "Race condition in goroutine",
+    "solution": "Protect shared state with mutexes or channels. Run `go test -race` to detect race conditions."
+  },
+  {
+    "label": "Deadlock in mutex",
+    "solution": "Avoid nested locks and ensure mutexes are always unlocked, preferably using `defer`."
+  },
+  {
+    "label": "Channel closed twice",
+    "solution": "Only close channels from the sender side and ensure closure happens exactly once."
+  },
+  {
+    "label": "Index out of range panic",
+    "solution": "Validate slice indices before access and guard loops with correct bounds."
+  }
+]
